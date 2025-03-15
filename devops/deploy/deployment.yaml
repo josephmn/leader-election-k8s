@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leader-election
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: leader-election
+  template:
+    metadata:
+      labels:
+        app: leader-election
+    spec:
+      serviceAccountName: leader-election-sa
+      containers:
+        - name: leader-election
+          image: leader-election-k8s:1.0.0-SNAPSHOT
+          ports:
+            - containerPort: 8091
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: leader-election-service
+spec:
+  selector:
+    app: leader-election
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8091
+---
+apiVersion: coordination.k8s.io/v1
+kind: Lease
+metadata:
+  name: my-leader-election
+  namespace: default
+spec:
+  holderIdentity: ""
+  leaseDurationSeconds: 10
